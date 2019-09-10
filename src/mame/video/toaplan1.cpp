@@ -921,7 +921,87 @@ void toaplan1_state::draw_sprites(screen_device &screen, bitmap_ind16 &bitmap, c
 	}
 }
 
+void toaplan1_state::ese_fadeout()
+{
+	if (m_fadeout_stop == 1)
+	{
+		m_playing = 0xff;
+		m_fadeout_ready = 0;
+		m_fadeout_stop = 0;
+		m_sample_vol = 1.00;
+		m_samples->set_volume(0, 1.00);
+	}
+	
+	if (m_counter >= 17)
+	{
+		m_counter = 0;
 
+		if (m_fadeout_ready == 1)
+		{
+			m_sample_vol = m_sample_vol - 0.10;
+
+			if (m_sample_vol <= 0)
+				m_sample_vol = 0;
+
+			m_samples->set_volume(0, m_sample_vol);
+		}
+
+		if (m_sample_vol == 0)
+		{
+			m_samples->stop(0);
+			m_fadeout_ready = 0;
+			m_fadeout_stop = 0;
+			m_sample_vol = 1.00;
+			m_samples->set_volume(0, 1.00);
+
+			if (m_playing != 0xff)
+			{
+				m_samples->start(0, m_playing, 1);
+				m_playing = 0xff;
+			}
+		}
+	}
+
+	m_counter++;	
+}
+
+void toaplan1_state::ese_fadeout2()
+{
+	if (m_fadeout_stop == 1)
+	{
+		m_playing = 0xff;
+		m_fadeout_ready = 0;
+		m_fadeout_stop = 0;
+		m_sample_vol = 1.00;
+		m_samples->set_volume(0, 1.00);
+	}
+	
+	if (m_counter >= 10)
+	{
+		m_counter = 0;
+
+		if (m_fadeout_ready == 1)
+		{
+			m_sample_vol = m_sample_vol - 0.10;
+
+			if (m_sample_vol <= 0)
+				m_sample_vol = 0;
+
+			m_samples->set_volume(0, m_sample_vol);
+		}
+
+		if (m_sample_vol == 0)
+		{
+			m_samples->stop(0);
+			m_fadeout_ready = 0;
+			m_fadeout_stop = 0;
+			m_sample_vol = 1.00;
+			m_samples->set_volume(0, 1.00);
+		}
+	}
+
+	m_counter++;	
+}
 
 
 /***************************************************************************
@@ -978,6 +1058,28 @@ UINT32 toaplan1_state::screen_update_toaplan1(screen_device &screen, bitmap_ind1
 	}
 
 	draw_sprites(screen, bitmap, cliprect);
+	
+	if (m_fadeout != 0)
+	{
+		if (m_start1 > 0) 
+			m_wait++;
+
+		if (m_wait >=(92 + m_start2))
+		{
+			m_samples->stop(0);
+			m_samples->set_volume(0, 1.00);
+			m_samples->start(0, 0x7, 0);
+			m_start1 = 0;
+			m_start2 = 1;
+			m_wait = 0;
+		}
+
+		if (m_start2 == 0 && m_fadeout == 1) 
+			ese_fadeout2();
+		
+		if (m_fadeout == 2) 
+			ese_fadeout();	// Vimana
+	}
 	return 0;
 }
 

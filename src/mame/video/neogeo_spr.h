@@ -70,6 +70,8 @@ public:
 	UINT8      m_fixed_layer_source;
 	UINT8      m_fixed_layer_bank_type;
 
+	UINT8 	   m_neogeo_raster_hack;
+
 	emu_timer  *m_auto_animation_timer;
 	emu_timer  *m_sprite_line_timer;
 

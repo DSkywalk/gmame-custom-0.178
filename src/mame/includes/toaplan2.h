@@ -16,6 +16,7 @@
 #include "machine/upd4992.h"
 #include "video/gp9001.h"
 #include "sound/okim6295.h"
+#include "sound/samples.h"
 
 class toaplan2_state : public driver_device
 {
@@ -42,6 +43,7 @@ public:
 		m_nmk112(*this, "nmk112"),
 		m_oki(*this, "oki"),
 		m_oki1(*this, "oki1"),
+		m_samples(*this, "samples"),
 		m_eeprom(*this, "eeprom"),
 		m_rtc(*this, "rtc"),
 		m_gfxdecode(*this, "gfxdecode"),
@@ -67,6 +69,7 @@ public:
 	optional_device<nmk112_device> m_nmk112;
 	optional_device<okim6295_device> m_oki;
 	optional_device<okim6295_device> m_oki1;
+	optional_device<samples_device> m_samples;
 	optional_device<eeprom_serial_93cxx_device> m_eeprom;
 	optional_device<upd4992_device> m_rtc;
 	optional_device<gfxdecode_device> m_gfxdecode;
@@ -95,6 +98,7 @@ public:
 	DECLARE_READ16_MEMBER(shared_ram_r);
 	DECLARE_WRITE16_MEMBER(shared_ram_w);
 	DECLARE_WRITE16_MEMBER(toaplan2_hd647180_cpu_w);
+	DECLARE_WRITE16_MEMBER(tekipaki_hd647180_cpu_w);
 	DECLARE_READ16_MEMBER(ghox_p1_h_analog_r);
 	DECLARE_READ16_MEMBER(ghox_p2_h_analog_r);
 	DECLARE_READ16_MEMBER(ghox_mcu_r);
@@ -148,6 +152,7 @@ public:
 	DECLARE_VIDEO_START(bgareggabl);
 	DECLARE_VIDEO_START(batrider);
 	UINT32 screen_update_toaplan2(screen_device &screen, bitmap_ind16 &bitmap, const rectangle &cliprect);
+	UINT32 screen_update_toaplan2_samples(screen_device &screen, bitmap_ind16 &bitmap, const rectangle &cliprect);
 	UINT32 screen_update_dogyuun(screen_device &screen, bitmap_ind16 &bitmap, const rectangle &cliprect);
 	UINT32 screen_update_batsugun(screen_device &screen, bitmap_ind16 &bitmap, const rectangle &cliprect);
 	UINT32 screen_update_truxton2(screen_device &screen, bitmap_ind16 &bitmap, const rectangle &cliprect);
@@ -160,11 +165,20 @@ public:
 	void truxton2_postload();
 	void create_tx_tilemap(int dx = 0, int dx_flipped = 0);
 	void toaplan2_vblank_irq(int irq_line);
+	void ese_fadeout();
 
 	DECLARE_WRITE8_MEMBER(pwrkick_coin_w);
 	DECLARE_WRITE8_MEMBER(pwrkick_coin_lockout_w);
 
 	DECLARE_WRITE_LINE_MEMBER(toaplan2_reset);
+	
+	// samples simulation in ghox and tekipaki
+	UINT8 m_fadeout_ready;
+	UINT8 m_fadeout_stop;
+	UINT8 m_counter;
+	float m_sample_vol;
+	UINT8 m_playing;
+
 protected:
 	virtual void device_timer(emu_timer &timer, device_timer_id id, int param, void *ptr) override;
 };

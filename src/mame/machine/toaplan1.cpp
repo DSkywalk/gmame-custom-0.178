@@ -179,6 +179,95 @@ READ16_MEMBER(toaplan1_state::samesame_port_6_word_r)
 	return (0x80 | ioport("TJUMP")->read()) & 0xff;
 }
 
+WRITE16_MEMBER(toaplan1_state::samesame_mcu_w)
+{
+	if (data == 0x00 || data == 0xdf)
+	{
+		m_samples->stop(0);
+		m_samples->stop(1);
+		m_samples->stop(2);
+		m_samples->stop(3);
+		m_samples->stop(4);
+		m_samples->stop(5);
+		m_samples->stop(6);
+		m_samples->stop(7);
+		m_samples->stop(8);
+	}
+
+	if (data >= 0x01 && data <= 0x05)
+	{
+		m_samples->set_volume(0, 1.00);
+		m_fadeout_stop = 1;
+		m_start2 = 0;
+		m_samples->start(0, data, 1);
+	}
+
+	if (data == 0x06) 
+	{
+		m_samples->start(0, data, 0);
+		m_start2 = 72;
+	}
+
+	if (data == 0x07) 
+	{
+		m_fadeout_ready = 1;
+		m_start1 = 1;
+	}
+
+	if (data == 0x08 || data == 0x09)
+		m_samples->start(1, data, 0);
+
+	if (data >= 0x0a && data <= 0x0f)
+		m_samples->start(2, data, 0);
+
+	if (data == 0x10 || data == 0x11)
+		m_samples->start(3, data, 0);
+
+	if (data >= 0x12 && data <= 0x16)
+		m_samples->start(4, data , 0);
+
+	if (data >= 0x17 && data <= 0x1b)
+		m_samples->start(5, data, 0);
+
+	if (data >= 0x1c && data <= 0x1f)
+		m_samples->start(0, data, 0);
+
+	if (data == 0x20 || data == 0x21)
+		m_samples->start(6, data, 0);
+
+	if (data == 0x22)
+		m_samples->start(0, data, 0);
+
+	if (data == 0x23 || data == 0x24)
+		m_samples->start (7, data, 0);
+
+	if (data == 0x24)
+	{
+		m_samples->start(7, data, 0);
+		m_fadeout_ready = 1;
+	}
+
+	if (data == 0x25)
+	{
+		m_samples->set_volume(0, 1.00);
+		m_samples->start(0, data, 0);
+		m_fadeout_stop = 1;
+	}
+
+	if (data == 0x26)
+		m_samples->start(2, data, 0);
+
+	if (data == 0x27)
+	{
+		m_samples->set_volume(0, 1.00);
+		m_samples->start(0, data, 0);
+		m_fadeout_stop = 1;
+	}
+
+	if (data == 0x28)
+		m_samples->start(8, data, 0);
+}
+
 READ16_MEMBER(toaplan1_state::vimana_system_port_r)
 {
 	static const UINT8 vimana_region[16] =
@@ -268,6 +357,125 @@ READ16_MEMBER(toaplan1_state::vimana_mcu_r)
 
 WRITE16_MEMBER(toaplan1_state::vimana_mcu_w)
 {
+	if (data == 0x00 || data==0xfe)
+	{
+		m_fadeout_stop = 1;
+		m_vim_play = 0xff;
+		m_samples->stop(0);
+		m_samples->stop(1);
+		m_samples->stop(2);
+		m_samples->stop(3);
+		m_samples->stop(4);
+		m_samples->stop(5);
+		m_samples->stop(6);
+		m_samples->stop(7);
+		m_samples->stop(8);
+		m_samples->stop(9);
+		m_samples->stop(10);
+		m_samples->stop(11);
+		m_samples->stop(12);
+		m_samples->stop(13);
+	}
+
+	if (data >= 0x01 && data <= 0x06)
+	{
+		if (m_vim_play >= 0x01 && m_vim_play <= 0x06)
+		{
+			m_fadeout_ready = 1;
+			m_playing = data;
+			m_vim_play = data;
+		}
+		else
+		{
+			m_fadeout_stop = 1;
+			m_samples->start(0, data, 1);
+			m_vim_play = data;
+		}
+	}
+
+	if (data == 0x07)
+	{
+		m_fadeout_stop = 1;
+		m_samples->start(0, data, 0);
+		m_vim_play = 0;
+	}
+
+	if (data == 0x08)
+		m_samples->start(1, data, 0);
+
+	if (data >= 0x09 && data <= 0x0c)
+		m_samples->start(2, data, 0);
+
+	if (data == 0x0d)
+		m_samples->start(3, data, 0);
+
+	if (data >= 0x0e && data <= 0x10)
+		m_samples->start(4, data, 0);
+
+	if (data == 0x11)
+		m_samples->start(5, data, 0);
+
+	if (data == 0x12)
+		m_samples->start(6, data, 0);
+
+	if (data == 0x91)
+	{
+		m_samples->stop(5);
+		m_samples->stop(6);
+	}
+	
+	if (data == 0x13)
+		m_samples->start(6, data, 0);
+
+	if (data == 0x14)
+		m_samples->start(7, data, 0);
+
+	if (data == 0x15)
+		m_samples->start(8, data, 0);
+
+	if (data == 0x16)
+		m_samples->start(9, data, 0);
+
+	if (data == 0x17)
+		m_samples->start(10, data, 0);
+
+	if (data == 0x18 || data == 0x19)
+		m_samples->start(11, data, 0);
+
+	if (data == 0x1a)
+	{
+		m_vim_play = 0xff;
+		m_playing = 0xff;
+		m_fadeout_ready = 1;
+		m_samples->start(11, data, 0);
+	}
+
+	if (data == 0x1c)
+		m_samples->start(12, data, 0);
+		
+	if (data == 0x1d)
+	{
+		m_playing = 0xff;
+		m_fadeout_stop = 1;
+		m_samples->start(0, data, 1);
+		m_vim_play = 1;
+	}
+
+	if (data == 0x1e)
+	{
+		m_samples->start(0, data, 0);
+		m_vim_play = 0;
+	}
+
+	if (data == 0x20)
+		m_samples->start(13, data, 0);
+
+	if (data == 0x22)
+	{
+		m_samples->start(0, data, 0);
+		m_vim_play = 0;
+	}
+
 	switch (offset)
 	{
 		case 0: break;
@@ -378,6 +586,17 @@ MACHINE_RESET_MEMBER(toaplan1_state,toaplan1)
 	m_intenable = 0;
 	m_coin_count = 0;
 	machine().bookkeeping().coin_lockout_global_w(0);
+	
+	m_start1 = 0;
+	m_start2 = 0;
+	m_fadeout_ready = 0;
+	m_fadeout_stop = 0;
+	m_playing = 0xff;
+	m_fadeout = 0;
+	m_counter = 0;
+	m_sample_vol = 0;
+	m_vim_play = 0xff;
+	m_wait = 0;
 }
 
 /* zerowing, fireshrk, outzone */
@@ -402,6 +621,21 @@ MACHINE_RESET_MEMBER(toaplan1_state,vimana)
 	m_vimana_credits = 0;
 	m_vimana_latch = 0;
 	m_maincpu->set_reset_callback(write_line_delegate(FUNC(toaplan1_state::toaplan1_reset_callback),this));
+
+	m_samples->set_volume(0, 1.00);
+	m_samples->set_volume(1, 0.60);
+	m_samples->set_volume(2, 0.60);
+	m_samples->set_volume(3, 0.60);
+	m_samples->set_volume(4, 0.60);
+	m_samples->set_volume(5, 0.60);
+	m_samples->set_volume(6, 0.60);
+	m_samples->set_volume(7, 0.60);
+	m_samples->set_volume(8, 0.60);
+	m_samples->set_volume(9, 0.60);
+	m_samples->set_volume(10, 0.60);
+	m_samples->set_volume(11, 0.60);
+	m_samples->set_volume(12, 0.60);
+	m_samples->set_volume(13, 0.60);
 }
 
 

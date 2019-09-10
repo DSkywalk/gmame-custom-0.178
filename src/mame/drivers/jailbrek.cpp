@@ -261,7 +261,7 @@ static MACHINE_CONFIG_START( jailbrek, jailbrek_state )
 	MCFG_CPU_ADD("maincpu", KONAMI1, MASTER_CLOCK/12)
 	MCFG_CPU_PROGRAM_MAP(jailbrek_map)
 	MCFG_CPU_VBLANK_INT_DRIVER("screen", jailbrek_state,  interrupt)
-	MCFG_CPU_PERIODIC_INT_DRIVER(jailbrek_state, interrupt_nmi,  500) /* ? */
+	MCFG_CPU_PERIODIC_INT_DRIVER(jailbrek_state, interrupt_nmi,  480) 	/* better */
 
 	MCFG_WATCHDOG_ADD("watchdog")
 

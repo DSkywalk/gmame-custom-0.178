@@ -438,7 +438,7 @@ static MACHINE_CONFIG_START( vendetta, vendetta_state )
 	MCFG_ADDRESS_MAP_BANK_ADDRBUS_WIDTH(13)
 	MCFG_ADDRESS_MAP_BANK_STRIDE(0x1000)
 
-	MCFG_CPU_ADD("audiocpu", Z80, XTAL_3_579545MHz) /* verified with PCB */
+	MCFG_CPU_ADD("audiocpu", Z80, XTAL_3_579545MHz * 2) /* multiplied for music speed */
 	MCFG_CPU_PROGRAM_MAP(sound_map)
 							/* interrupts are triggered by the main CPU */
 
