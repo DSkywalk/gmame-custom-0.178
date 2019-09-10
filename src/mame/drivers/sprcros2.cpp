@@ -458,7 +458,7 @@ static MACHINE_CONFIG_START( sprcros2, sprcros2_state )
 	/* video hardware */
 	MCFG_SCREEN_ADD("screen", RASTER)
 	MCFG_SCREEN_UPDATE_DRIVER(sprcros2_state, screen_update)
-	MCFG_SCREEN_RAW_PARAMS(MAIN_CLOCK/2, 343, 8, 256-8, 262, 16, 240) // TODO: Wrong screen parameters
+	MCFG_SCREEN_RAW_PARAMS(MAIN_CLOCK/2, 343, 16, 256-16, 262, 16, 240) // TODO: Wrong screen parameters
 	MCFG_SCREEN_PALETTE("palette")
 
 	MCFG_GFXDECODE_ADD("gfxdecode", "palette", sprcros2)

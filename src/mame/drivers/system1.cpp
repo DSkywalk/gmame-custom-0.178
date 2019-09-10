@@ -2192,7 +2192,7 @@ static MACHINE_CONFIG_DERIVED( sys1ppis, sys1ppi )
 
 	/* video hardware */
 	MCFG_SCREEN_MODIFY("screen")
-	MCFG_SCREEN_VISIBLE_AREA(2*(0*8+8), 2*(32*8-1-8), 0*8, 28*8-1)
+	MCFG_SCREEN_RAW_PARAMS(MAIN_CLOCK/2, 640, 8, 496, 260, 0, 224)
 MACHINE_CONFIG_END
 
 
@@ -2340,6 +2340,7 @@ static MACHINE_CONFIG_DERIVED( sys1piox_315_5093, sys1pio )
 	MCFG_CPU_REPLACE("maincpu", SEGA_315_5093, MASTER_CLOCK)
 	ENCRYPTED_SYS1PIO_MAPS
 	MCFG_SEGACRPT_SET_DECRYPTED_TAG(":decrypted_opcodes")
+	MCFG_SCREEN_RAW_PARAMS(MAIN_CLOCK/2, 640, 0, 512, 260, 0, 224)
 MACHINE_CONFIG_END
 
 static MACHINE_CONFIG_DERIVED( sys1piox_315_5065, sys1pio )
@@ -2353,7 +2354,7 @@ static MACHINE_CONFIG_DERIVED( sys1pios, sys1pio )
 
 	/* video hardware */
 	MCFG_SCREEN_MODIFY("screen")
-	MCFG_SCREEN_VISIBLE_AREA(2*(0*8+8), 2*(32*8-1-8), 0*8, 28*8-1)
+	MCFG_SCREEN_RAW_PARAMS(MAIN_CLOCK/2, 640, 0, 512, 260, 0, 224)
 MACHINE_CONFIG_END
 
 static MACHINE_CONFIG_DERIVED( sys1piosx_315_5099, sys1pios )
@@ -2384,8 +2385,6 @@ MACHINE_CONFIG_END
 
 
 
-
-
 /* this describes the additional 8751 MCU when present */
 static MACHINE_CONFIG_FRAGMENT( mcu )
 
@@ -2408,6 +2407,8 @@ static MACHINE_CONFIG_DERIVED( nob, sys1ppi )
 	/* basic machine hardware */
 	MCFG_CPU_MODIFY("maincpu")
 	MCFG_CPU_PROGRAM_MAP(nobo_map)
+	MCFG_SCREEN_MODIFY("screen")
+	MCFG_SCREEN_RAW_PARAMS(MASTER_CLOCK/2, 640, 16, 496, 260, 0, 224)
 MACHINE_CONFIG_END
 
 static MACHINE_CONFIG_DERIVED( nobm, nob )
@@ -2467,6 +2468,8 @@ MACHINE_CONFIG_END
 
 static MACHINE_CONFIG_DERIVED( sys2m, sys2 )
 	MCFG_FRAGMENT_ADD( mcu )
+	MCFG_SCREEN_MODIFY("screen")
+	MCFG_SCREEN_RAW_PARAMS(MASTER_CLOCK/2, 640, 16, 496, 260, 0, 224)
 MACHINE_CONFIG_END
 
 /* system2 with rowscroll */
@@ -2486,6 +2489,42 @@ static MACHINE_CONFIG_DERIVED( sys2rowm, sys2row )
 	MCFG_FRAGMENT_ADD( mcu )
 MACHINE_CONFIG_END
 
+
+static MACHINE_CONFIG_DERIVED( wboy, sys1piox_315_5177 )
+	/* video hardware */
+	MCFG_SCREEN_MODIFY("screen")
+	MCFG_SCREEN_RAW_PARAMS(MAIN_CLOCK/2, 640, 32, 480, 260, 0, 224)
+MACHINE_CONFIG_END
+
+static MACHINE_CONFIG_DERIVED( brain, sys1pio )
+	/* video hardware */
+	MCFG_SCREEN_MODIFY("screen")
+	MCFG_SCREEN_RAW_PARAMS(MASTER_CLOCK/2, 640, 16, 496, 260, 8, 224)
+MACHINE_CONFIG_END
+
+static MACHINE_CONFIG_DERIVED( gardia, sys1piox_317_0006 )
+	/* video hardware */
+	MCFG_SCREEN_MODIFY("screen")
+	MCFG_SCREEN_RAW_PARAMS(MASTER_CLOCK/2, 640, 16, 496, 260, 0, 224)
+MACHINE_CONFIG_END
+
+static MACHINE_CONFIG_DERIVED( tokisens, sys2 )
+	/* video hardware */
+	MCFG_SCREEN_MODIFY("screen")
+	MCFG_SCREEN_RAW_PARAMS(MASTER_CLOCK/2, 640, 16, 496, 260, 8, 216)
+MACHINE_CONFIG_END
+
+static MACHINE_CONFIG_DERIVED( ufosensi, sys2rowxb )
+	/* video hardware */
+	MCFG_SCREEN_MODIFY("screen")
+	MCFG_SCREEN_RAW_PARAMS(MASTER_CLOCK/2, 640, 16, 496, 260, 8, 216)
+MACHINE_CONFIG_END
+
+static MACHINE_CONFIG_DERIVED( swat, sys1ppix_315_5048 )
+	/* video hardware */
+	MCFG_SCREEN_MODIFY("screen")
+	MCFG_SCREEN_RAW_PARAMS(MASTER_CLOCK/2, 640, 0, 496, 260, 0, 224)
+MACHINE_CONFIG_END
 
 
 /*************************************
@@ -5358,7 +5397,7 @@ GAME( 1983, reguluso,   regulus,  sys1ppix_315_5033, reguluso,  system1_state, b
 GAME( 1983, regulusu,   regulus,  sys1ppi,           regulus,   system1_state, bank00,       ROT270, "Sega", "Regulus (not encrypted)", MACHINE_SUPPORTS_SAVE )
 GAME( 1984, mrviking,   0,        sys1ppisx_315_5041,mrviking,  system1_state, bank00,       ROT270, "Sega", "Mister Viking (315-5041)", MACHINE_SUPPORTS_SAVE )
 GAME( 1984, mrvikingj,  mrviking, sys1ppisx_315_5041,mrvikingj, system1_state, bank00,       ROT270, "Sega", "Mister Viking (315-5041, Japan)", MACHINE_SUPPORTS_SAVE )
-GAME( 1984, swat,       0,        sys1ppix_315_5048, swat,      system1_state, bank00,       ROT270, "Coreland / Sega", "SWAT (315-5048)", MACHINE_SUPPORTS_SAVE )
+GAME( 1984, swat,       0,        swat,              swat,      system1_state, bank00,       ROT270, "Coreland / Sega", "SWAT (315-5048)", MACHINE_SUPPORTS_SAVE )
 GAME( 1984, flickyo,    flicky,   sys1ppix_315_5051, flicky,    system1_state, bank00,       ROT0,   "Sega", "Flicky (64k Version, System 1, 315-5051, set 1)", MACHINE_SUPPORTS_SAVE )
 GAME( 1984, flickys1,   flicky,   sys1ppix_315_5051, flickys1,  system1_state, bank00,       ROT0,   "Sega", "Flicky (64k Version, System 1, 315-5051, set 2)", MACHINE_SUPPORTS_SAVE )
 GAME( 1984, wmatch,     0,        sys1ppisx_315_5064,wmatch,    system1_state, bank00,       ROT270, "Sega", "Water Match (315-5064)", MACHINE_SUPPORTS_SAVE )
@@ -5398,7 +5437,7 @@ GAME( 1985, myherobl,   myhero,   sys1piox_315_5132, myhero,    system1_state, b
 GAME( 1985, myherok,    myhero,   sys1piox_315_5132, myhero,    system1_state, myherok,       ROT0,   "Coreland / Sega", "My Hero (Korea)", MACHINE_SUPPORTS_SAVE ) // possible bootleg, has extra encryption
 GAME( 1985, 4dwarrio,   0,        sys1piox_315_5162, 4dwarrio,  system1_state, bank00,        ROT0,   "Coreland / Sega", "4-D Warriors (315-5162)", MACHINE_SUPPORTS_SAVE )
 GAME( 1986, raflesia,   0,        sys1piox_315_5162, raflesia,  system1_state, bank00,        ROT270, "Coreland / Sega", "Rafflesia (315-5162)", MACHINE_SUPPORTS_SAVE )
-GAME( 1986, wboy,       0,        sys1piox_315_5177, wboy,      system1_state, bank00,        ROT0,   "Escape (Sega license)", "Wonder Boy (set 1, 315-5177)", MACHINE_SUPPORTS_SAVE )
+GAME( 1986, wboy,       0,        wboy,              wboy,      system1_state, bank00,        ROT0,   "Escape (Sega license)", "Wonder Boy (set 1, 315-5177)", MACHINE_SUPPORTS_SAVE )
 GAME( 1986, wboyo,      wboy,     sys1piox_315_5135, wboy,      system1_state, bank00,        ROT0,   "Escape (Sega license)", "Wonder Boy (set 2, 315-5135)", MACHINE_SUPPORTS_SAVE ) // aka 317-0003
 GAME( 1986, wboy3,      wboy,     sys1piox_315_5135, wboy3,     system1_state, bank00,        ROT0,   "Escape (Sega license)", "Wonder Boy (set 3, 315-5135)", MACHINE_SUPPORTS_SAVE )
 GAME( 1986, wboy4,      wboy,     sys1piox_315_5162, wboy,      system1_state, bank00,        ROT0,   "Escape (Sega license)", "Wonder Boy (315-5162, 4-D Warriors Conversion)", MACHINE_SUPPORTS_SAVE )
@@ -5409,8 +5448,8 @@ GAME( 1987, blockgal,   0,        sys1piox,          blockgal,  system1_state, b
 
 /* PIO-based System 1 with ROM banking */
 GAME( 1985, hvymetal,   0,        sys1piox_315_5135, hvymetal,  system1_state, bank44,        ROT0,   "Sega", "Heavy Metal (315-5135)", MACHINE_SUPPORTS_SAVE )
-GAME( 1986, gardia,     0,        sys1piox_317_0006, gardia,    system1_state, bank44,        ROT270, "Coreland / Sega", "Gardia (317-0006)", MACHINE_NO_COCKTAIL | MACHINE_SUPPORTS_SAVE)
-GAME( 1986, brain,      0,        sys1pio,           brain,     system1_state, bank44,        ROT0,   "Coreland / Sega", "Brain", MACHINE_SUPPORTS_SAVE )
+GAME( 1986, gardia,     0,        gardia,            gardia,    system1_state, bank44,        ROT270, "Coreland / Sega", "Gardia (317-0006)", MACHINE_NO_COCKTAIL | MACHINE_SUPPORTS_SAVE)
+GAME( 1986, brain,      0,        brain,             brain,     system1_state, bank44,        ROT0,   "Coreland / Sega", "Brain", MACHINE_SUPPORTS_SAVE )
 
 /* System 2 */
 GAME( 1985, choplift,   0,        sys2rowm,          choplift,  system1_state, choplift,        ROT0,   "Sega (licensed from Dan Gorlin)", "Choplifter (8751 315-5151)", MACHINE_SUPPORTS_SAVE )
@@ -5422,7 +5461,8 @@ GAME( 1986, gardiab,    gardia,   sys2_317_0007,     gardia,    system1_state, b
 GAME( 1986, gardiaj,    gardia,   sys2_317_0006,     gardia,    system1_state, bank44,          ROT270, "Coreland / Sega", "Gardia (Japan, 317-0006)", MACHINE_IMPERFECT_GRAPHICS | MACHINE_SUPPORTS_SAVE )
 GAME( 1986, wboysys2,   wboy,     sys2_315_5177,     wboysys2,  system1_state, bank0c,          ROT0,   "Escape (Sega license)", "Wonder Boy (system 2, set 1, 315-5177)", MACHINE_SUPPORTS_SAVE )
 GAME( 1986, wboysys2a,  wboy,     sys2_315_5176,     wboysys2,  system1_state, bank0c,          ROT0,   "Escape (Sega license)", "Wonder Boy (system 2, set 2, 315-5176)", MACHINE_NOT_WORKING | MACHINE_SUPPORTS_SAVE )
-GAME( 1987, tokisens,   0,        sys2,              tokisens,  system1_state, bank0c,          ROT90,  "Sega", "Toki no Senshi - Chrono Soldier", MACHINE_SUPPORTS_SAVE )
+/* original - sys2 */
+GAME( 1987, tokisens,   0,        tokisens,          tokisens,  system1_state, bank0c,          ROT90,  "Sega", "Toki no Senshi - Chrono Soldier", MACHINE_SUPPORTS_SAVE )
 GAME( 1987, wbml,       0,        sys2xb,            wbml,      system1_state, wbml,            ROT0,   "Sega / Westone", "Wonder Boy in Monster Land (Japan New Ver., MC-8123, 317-0043)", MACHINE_SUPPORTS_SAVE )
 GAME( 1987, wbmljo,     wbml,     sys2xb,            wbml,      system1_state, wbml,            ROT0,   "Sega / Westone", "Wonder Boy in Monster Land (Japan Old Ver., MC-8123, 317-0043)", MACHINE_SUPPORTS_SAVE )
 GAME( 1987, wbmljb,     wbml,     sys2xb,            wbml,      system1_state, bootsys2,        ROT0,   "bootleg", "Wonder Boy in Monster Land (Japan bootleg)", MACHINE_SUPPORTS_SAVE )
@@ -5435,5 +5475,5 @@ GAME( 1987, wbmld,      wbml,     sys2xb,            wbml,      system1_state, b
 GAME( 1987, wbmljod,    wbml,     sys2xb,            wbml,      system1_state, bootsys2d,       ROT0,   "bootleg (mpatou)", "Wonder Boy in Monster Land (decrypted bootleg of Japan Old Ver., MC-8123, 317-0043)", MACHINE_SUPPORTS_SAVE )
 GAME( 1987, dakkochn,   0,        sys2xb,            dakkochn,  system1_state, dakkochn,        ROT0,   "White Board", "DakkoChan House (MC-8123B, 317-5014)", MACHINE_SUPPORTS_SAVE )
 GAME( 1987, blockgalb,  blockgal, sys2x,             blockgal,  system1_state, bootleg,         ROT90,  "bootleg", "Block Gal (bootleg)", MACHINE_SUPPORTS_SAVE )
-GAME( 1988, ufosensi,   0,        sys2rowxb,         ufosensi,  system1_state, ufosensi,        ROT0,   "Sega", "Ufo Senshi Yohko Chan (MC-8123, 317-0064)", MACHINE_SUPPORTS_SAVE )
+GAME( 1988, ufosensi,   0,        ufosensi,          ufosensi,  system1_state, ufosensi,        ROT0,   "Sega", "Ufo Senshi Yohko Chan (MC-8123, 317-0064)", MACHINE_SUPPORTS_SAVE )
 GAME( 1988, ufosensib,  ufosensi, sys2rowxb,         ufosensi,  system1_state, bootsys2,        ROT0,   "bootleg", "Ufo Senshi Yohko Chan (bootleg, not encrypted)", MACHINE_SUPPORTS_SAVE )
