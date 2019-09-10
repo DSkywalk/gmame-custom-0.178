@@ -158,6 +158,10 @@
 #define OPTION_UPDATEINPAUSE        "update_in_pause"
 #define OPTION_DEBUGSCRIPT          "debugscript"
 
+// ages customs configs
+#define OPTION_CUSTOM_DIFFICULTY    "custom_difficulty"
+#define OPTION_CUSTOMS_FORCED       "customs_forced"
+
 // core misc options
 #define OPTION_DRC                  "drc"
 #define OPTION_DRC_USE_C            "drc_use_c"
@@ -377,6 +381,10 @@ public:
 	bool oslog() const { return bool_value(OPTION_OSLOG); }
 	const char *debug_script() const { return value(OPTION_DEBUGSCRIPT); }
 	bool update_in_pause() const { return bool_value(OPTION_UPDATEINPAUSE); }
+
+	//ages customs configs
+	const char *custom_difficulty() const { return value(OPTION_CUSTOM_DIFFICULTY); }
+	bool customs_forced() const { return bool_value(OPTION_CUSTOMS_FORCED); }
 
 	// core misc options
 	bool drc() const { return bool_value(OPTION_DRC); }
