@@ -323,8 +323,8 @@ void set_difficulty(int misc_difficulty, ioport_field &found, int steps) {
 															found.defvalue(), found.minval(), 
 															found.maxval(), found.delta(), steps
 														 );
-	const char** names;
-	const char** names_secondary;
+	const char** names = NAME_MEDIUM;
+	const char** names_secondary = NAME_EASY;
 
 	// get the list of names
 	switch (misc_difficulty) {
@@ -357,7 +357,7 @@ void set_difficulty(int misc_difficulty, ioport_field &found, int steps) {
 	for(int j=0;names[j] && level == -1;++j)
 		for (ioport_setting const &iop : found.settings())
 		{
-			osd_printf_debug("set: name=\"%s\" number=\"%u\"\n", util::xml::normalize_string(iop.name()), iop.value());
+			//osd_printf_debug("set: name=\"%s\" number=\"%u\"\n", util::xml::normalize_string(iop.name()), iop.value());
 			if (strcmp(names[j], iop.name())==0)
 			{
 				level = iop.value();
@@ -373,7 +373,7 @@ void set_difficulty(int misc_difficulty, ioport_field &found, int steps) {
 		for(int j=0;names_secondary[j] && level == -1;++j)
 			for (ioport_setting const &iop : found.settings())
 			{
-				osd_printf_debug("set: name=\"%s\" number=\"%u\"\n", util::xml::normalize_string(iop.name()), iop.value());
+				//osd_printf_debug("set: name=\"%s\" number=\"%u\"\n", util::xml::normalize_string(iop.name()), iop.value());
 				if (strcmp(names_secondary[j], iop.name())==0)
 				{
 					level = iop.value();
