@@ -65,6 +65,7 @@ public:
 	int frameskip() const { return m_auto_frameskip ? -1 : m_frameskip_level; }
 	bool throttled() const { return m_throttled; }
 	float throttle_rate() const { return m_throttle_rate; }
+ 	bool sync_refresh() const { return m_syncrefresh; }
 	bool fastforward() const { return m_fastforward; }
 	bool is_recording() const { return (m_mng_file || m_avi_file); }
 
@@ -159,6 +160,8 @@ private:
 	// configuration
 	bool                m_throttled;                // flag: TRUE if we're currently throttled
 	float               m_throttle_rate;            // target rate for throttling
+ 	bool                m_syncrefresh;              // flag: TRUE if we're currently refresh-synced
+ 	INT32               m_framedelay;               // tenths of frame to delay emulation start
 	bool                m_fastforward;              // flag: TRUE if we're currently fast-forwarding
 	UINT32              m_seconds_to_run;           // number of seconds to run before quitting
 	bool                m_auto_frameskip;           // flag: TRUE if we're automatically frameskipping

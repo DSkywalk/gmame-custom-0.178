@@ -274,7 +274,7 @@ bgfx_chain* chain_manager::screen_chain(uint32_t screen)
 {
 	if (screen >= m_screen_chains.size())
 	{
-		return m_screen_chains[m_screen_chains.size() - 1];
+		return nullptr;
 	}
 	else
 	{

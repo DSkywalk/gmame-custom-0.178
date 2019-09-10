@@ -55,7 +55,6 @@ const options_entry osd_options::s_option_entries[] =
 	{ OSDOPTION_WINDOW ";w",                  "0",              OPTION_BOOLEAN,   "enable window mode; otherwise, full screen mode is assumed" },
 	{ OSDOPTION_MAXIMIZE ";max",              "1",              OPTION_BOOLEAN,   "default to maximized windows; otherwise, windows will be minimized" },
 	{ OSDOPTION_WAITVSYNC ";vs",              "0",              OPTION_BOOLEAN,   "enable waiting for the start of VBLANK before flipping screens; reduces tearing effects" },
-	{ OSDOPTION_SYNCREFRESH ";srf",           "0",              OPTION_BOOLEAN,   "enable using the start of VBLANK for throttling instead of the game time" },
 	{ OSD_MONITOR_PROVIDER,                   OSDOPTVAL_AUTO,   OPTION_STRING,    "monitor discovery method" },
 
 	// per-window options
@@ -87,10 +86,10 @@ const options_entry osd_options::s_option_entries[] =
 
 	// full screen options
 	{ nullptr,                                nullptr,          OPTION_HEADER,    "OSD FULL SCREEN OPTIONS" },
-	{ OSDOPTION_SWITCHRES,                    "0",              OPTION_BOOLEAN,   "enable resolution switching" },
+	{ OSDOPTION_SWITCHRES,                    "1",              OPTION_BOOLEAN,   "enable resolution switching" },
 
 	{ nullptr,                                nullptr,          OPTION_HEADER,    "OSD ACCELERATED VIDEO OPTIONS" },
-	{ OSDOPTION_FILTER ";glfilter;flt",       "1",              OPTION_BOOLEAN,   "enable bilinear filtering on screen output" },
+	{ OSDOPTION_FILTER ";glfilter;flt",       "0",              OPTION_BOOLEAN,   "enable bilinear filtering on screen output" },
 	{ OSDOPTION_PRESCALE,                     "1",              OPTION_INTEGER,   "scale screen rendering by this amount in software" },
 
 #if USE_OPENGL
@@ -125,7 +124,7 @@ const options_entry osd_options::s_option_entries[] =
 
 	{ nullptr,                                nullptr,          OPTION_HEADER,    "OSD SOUND OPTIONS" },
 	{ OSDOPTION_SOUND,                        OSDOPTVAL_AUTO,   OPTION_STRING,    "sound output method: " },
-	{ OSDOPTION_AUDIO_LATENCY "(1-5)",        "2",              OPTION_INTEGER,   "set audio latency (increase to reduce glitches, decrease for responsiveness)" },
+	{ OSDOPTION_AUDIO_LATENCY "(0.1-5.0)",    "2.0",            OPTION_FLOAT,     "set audio latency (increase to reduce glitches, decrease for responsiveness)" },
 
 #ifdef SDLMAME_MACOSX
 	{ nullptr,                                nullptr,          OPTION_HEADER,    "CoreAudio-SPECIFIC OPTIONS" },

@@ -56,6 +56,8 @@ using namespace Windows::UI::Core;
 #undef min
 #undef max
 
+extern bool switchres_resolution_change(win_window_info *window);
+
 //============================================================
 //  PARAMETERS
 //============================================================
@@ -93,7 +95,7 @@ static DWORD main_threadid;
 static int win_physical_width;
 static int win_physical_height;
 
-
+static BOOL multithreading_enabled = FALSE;
 
 //============================================================
 //  LOCAL VARIABLES
@@ -323,6 +325,7 @@ win_window_info::win_window_info(
 		m_machine(machine)
 {
 	memset(m_title,0,sizeof(m_title));
+	m_index = index;
 	m_non_fullscreen_bounds.left = 0;
 	m_non_fullscreen_bounds.top = 0;
 	m_non_fullscreen_bounds.right  = 0;
@@ -785,6 +788,11 @@ void win_window_info::create(running_machine &machine, int index, std::shared_pt
 	// handle error conditions
 	if (window->m_init_state == -1)
 		fatalerror("Unable to complete window creation\n");
+
+	// create blitting thread
+	multithreading_enabled = options.triple_buffer();
+	if (multithreading_enabled)
+		window->blit_loop_create();
 }
 
 std::shared_ptr<osd_monitor_info> win_window_info::monitor_from_rect(const osd_rect* proposed) const
@@ -819,6 +827,10 @@ void win_window_info::destroy()
 {
 	assert(GetCurrentThreadId() == main_threadid);
 
+	// destroy blitting thread
+	if (multithreading_enabled)
+		blit_loop_destroy();
+
 	// remove us from the list
 	osd_common_t::s_window_list.remove(shared_from_this());
 
@@ -833,6 +845,97 @@ void win_window_info::destroy()
 
 
 //============================================================
+//  blit_loop_create
+//  (blitting thread)
+//============================================================
+
+void win_window_info::blit_loop_create()
+{
+	// set loop as active and lock it until ready
+	m_blitting_active = TRUE;
+	m_blit_lock = TRUE;
+
+	// create blitting events
+	m_blit_pending = CreateEvent(NULL, FALSE, FALSE, NULL);
+	m_blit_done = CreateEvent(NULL, FALSE, FALSE, NULL);
+
+	// create blitting thread
+	CreateThread (NULL, 0, blit_loop, (LPVOID)this, 0, &m_blit_threadid);
+	osd_printf_verbose("Blitting thread created\n");
+}
+
+//============================================================
+//  blit_loop_destroy
+//  (blitting thread)
+//============================================================
+
+void win_window_info::blit_loop_destroy()
+{
+	// turn off blitting flag and wait until thread ends
+	m_blitting_active = FALSE;
+	WaitForSingleObject(m_blit_done, 100);
+
+	// close blitting events
+	if (m_blit_done) CloseHandle(m_blit_done);
+	if (m_blit_pending) CloseHandle(m_blit_pending);
+
+	osd_printf_verbose("Blitting thread destroyed\n");
+}
+
+//============================================================
+//  blit_loop
+//  (blitting thread)
+//============================================================
+
+DWORD WINAPI win_window_info::blit_loop(LPVOID lpParameter)
+{
+	return ((win_window_info *)lpParameter)->blit_loop_wt();
+}
+
+DWORD win_window_info::blit_loop_wt()
+{
+	bool m_throttled; 
+	osd_printf_verbose("Blitting thread started\n");
+
+	do {
+		WaitForSingleObject(m_blit_pending, INFINITE);
+		m_throttled = machine().video().throttled();
+		if (!m_blit_lock && has_renderer()) draw_video_contents(NULL, FALSE);
+		if (m_throttled) SetEvent(m_blit_done);
+	} while (m_blitting_active);
+
+	osd_printf_verbose("Blitting thread ended\n");
+
+	return -1;
+}
+
+//============================================================
+//  blit_lock_set
+//  (window thread)
+//============================================================
+
+void win_window_info::blit_lock_set()
+{
+	m_blit_lock = TRUE;
+	osd_printf_verbose("blit_lock = TRUE\n");
+	Sleep(20);
+}
+
+//============================================================
+//  blit_lock_release
+//  (window thread)
+//============================================================
+
+void win_window_info::blit_lock_release()
+{
+	Sleep(20);
+	m_blit_lock = FALSE;
+	osd_printf_verbose("blit_lock = FALSE\n");
+}
+
+
+
+//============================================================
 //  winwindow_video_window_update
 //  (main thread)
 //============================================================
@@ -841,6 +944,7 @@ void win_window_info::update()
 {
 	int targetview, targetorient;
 	render_layer_config targetlayerconfig;
+	static int frame_count = 0;
 
 	assert(GetCurrentThreadId() == main_threadid);
 
@@ -869,11 +973,7 @@ void win_window_info::update()
 	{
 		bool got_lock = true;
 
-		// only block if we're throttled
-		if (machine().video().throttled() || timeGetTime() - last_update_time > 250)
-			m_render_lock.lock();
-		else
-			got_lock = m_render_lock.try_lock();
+		got_lock = m_render_lock.try_lock();
 
 		// only render if we were able to get the lock
 		if (got_lock)
@@ -883,13 +983,37 @@ void win_window_info::update()
 			// don't hold the lock; we just used it to see if rendering was still happening
 			m_render_lock.unlock();
 
+			// check resolution change
+			if (renderer().m_switchres_mode != nullptr && video_config.switchres && machine().options().changeres())
+			{
+				if (switchres_resolution_change(this))
+				{
+					reset_fullscreen_renderer();
+					return;
+				}
+			}
+
 			// ensure the target bounds are up-to-date, and then get the primitives
 			primlist = renderer().get_primitives();
 
 			// post a redraw request with the primitive list as a parameter
 			last_update_time = timeGetTime();
 
-			SendMessage(platform_window<HWND>(), WM_USER_REDRAW, 0, (LPARAM)primlist);
+			if (multithreading_enabled && !m_blit_lock && video_config.mode != VIDEO_MODE_GDI)
+			{
+				m_primlist = primlist;
+				SetEvent(m_blit_pending);
+				if ((video_config.syncrefresh && machine().video().throttled()))
+					WaitForSingleObject(m_blit_done, 1000);
+				frame_count = 0;
+			}
+			else
+			{
+				m_primlist = primlist;
+				draw_video_contents(NULL, FALSE);
+				if (multithreading_enabled && frame_count++ > 5) blit_lock_release();
+			}
+
 		}
 	}
 }
@@ -1150,8 +1274,7 @@ LRESULT CALLBACK win_window_info::video_window_proc(HWND wnd, UINT message, WPAR
 		case WM_PAINT:
 		{
 			PAINTSTRUCT pstruct;
-			HDC hdc = BeginPaint(wnd, &pstruct);
-			window->draw_video_contents(hdc, TRUE);
+			BeginPaint(wnd, &pstruct);
 			if (window->win_has_menu())
 				DrawMenuBar(window->platform_window<HWND>());
 			EndPaint(wnd, &pstruct);
@@ -1293,6 +1416,11 @@ LRESULT CALLBACK win_window_info::video_window_proc(HWND wnd, UINT message, WPAR
 			}
 			return DefWindowProc(wnd, message, wparam, lparam);
 		}
+
+		case WM_ACTIVATE:
+			if (window->has_renderer() && window->fullscreen() && (LOWORD(wparam) == WA_INACTIVE) && !is_mame_window(HWND(lparam)))
+				if (osd_common_t::s_window_list.size()) winwindow_toggle_full_screen();
+			break;
 
 		// track whether we are in the foreground
 		case WM_ACTIVATEAPP:
@@ -1742,6 +1870,7 @@ void win_window_info::adjust_window_position_after_major_change()
 }
 
 
+
 //============================================================
 //  set_fullscreen
 //  (window thread)
@@ -1758,6 +1887,10 @@ void win_window_info::set_fullscreen(int fullscreen)
 
 	// reset UI to main menu
 	machine().ui().menu_reset();
+
+	// pause blitting thread;
+	if (multithreading_enabled)
+		blit_lock_set();
 
 	// kill off the drawers
 	renderer_reset();
@@ -1824,6 +1957,44 @@ void win_window_info::set_fullscreen(int fullscreen)
 
 	// ensure we're still adjusted correctly
 	adjust_window_position_after_major_change();
+}
+
+
+
+//============================================================
+//  reset_fullscreen_renderer
+//============================================================
+
+void win_window_info::reset_fullscreen_renderer()
+{
+	// if we're in the right state, punt
+	if (!m_fullscreen)
+		return;
+
+	// pause blitting thread;
+	if (multithreading_enabled)
+		blit_lock_set();
+
+	// kill off the drawers
+	renderer_reset();
+
+	// hide ourself
+	ShowWindow(platform_window<HWND>(), SW_HIDE);
+
+	// adjust the style
+	SetWindowLong(platform_window<HWND>(), GWL_STYLE, WINDOW_STYLE);
+	SetWindowLong(platform_window<HWND>(), GWL_EXSTYLE, WINDOW_STYLE_EX);
+	SetWindowPos(platform_window<HWND>(), 0, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE | SWP_NOZORDER | SWP_FRAMECHANGED);
+
+	SetWindowLong(platform_window<HWND>(), GWL_STYLE, FULLSCREEN_STYLE);
+	SetWindowLong(platform_window<HWND>(), GWL_EXSTYLE, FULLSCREEN_STYLE_EX);
+	SetWindowPos(platform_window<HWND>(), 0, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE | SWP_NOZORDER | SWP_FRAMECHANGED);
+
+	ShowWindow(platform_window<HWND>(), SW_SHOW);
+
+	set_renderer(osd_renderer::make_for_type(video_config.mode, shared_from_this()));
+	if (renderer().create())
+		exit(1);
 }
 
 #if (USE_QTDEBUG)

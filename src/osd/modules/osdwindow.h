@@ -207,6 +207,9 @@ public:
 
 	static std::unique_ptr<osd_renderer> make_for_type(int mode, std::shared_ptr<osd_window> window, int extra_flags = FLAG_NONE);
 
+	// SwitchRes mode
+	modeline *          m_switchres_mode;
+
 protected:
 	virtual void build_slider_list() { }
 

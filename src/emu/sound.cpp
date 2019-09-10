@@ -840,16 +840,13 @@ sound_manager::sound_manager(running_machine &machine)
 	machine.add_notifier(MACHINE_NOTIFY_RESUME, machine_notify_delegate(FUNC(sound_manager::resume), this));
 	machine.add_notifier(MACHINE_NOTIFY_RESET, machine_notify_delegate(FUNC(sound_manager::reset), this));
 	machine.add_notifier(MACHINE_NOTIFY_EXIT, machine_notify_delegate(FUNC(sound_manager::stop_recording), this));
+	machine.add_notifier(MACHINE_NOTIFY_FRAME, machine_notify_delegate(FUNC(sound_manager::update), this));
 
 	// register global states
 	machine.save().save_item(NAME(m_last_update));
 
 	// set the starting attenuation
 	set_attenuation(machine.options().volume());
-
-	// start the periodic update flushing timer
-	m_update_timer = machine.scheduler().timer_alloc(timer_expired_delegate(FUNC(sound_manager::update), this));
-	m_update_timer->adjust(STREAMS_UPDATE_ATTOTIME, 0, STREAMS_UPDATE_ATTOTIME);
 }
 
 
@@ -1051,7 +1048,7 @@ void sound_manager::config_save(config_type cfg_type, xml_data_node *parentnode)
 //  and send it to the OSD layer
 //-------------------------------------------------
 
-void sound_manager::update(void *ptr, int param)
+void sound_manager::update()
 {
 	VPRINTF(("sound_update\n"));
 

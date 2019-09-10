@@ -286,6 +286,8 @@ namespace bgfx
 	InternalData g_internalData;
 	PlatformData g_platformData;
 	bool g_platformDataChangedSinceReset = false;
+	video_mode vm;
+	uint32_t flags;
 
 	void AllocatorStub::checkLeaks()
 	{
@@ -2475,6 +2477,16 @@ namespace bgfx
 		errorState = ErrorState::ContextAllocated;
 
 		s_ctx = BX_ALIGNED_NEW(g_allocator, Context, 16);
+
+		if (vm.m_width)
+		{
+			s_ctx->m_resolution.m_width = vm.m_width;
+			s_ctx->m_resolution.m_height = vm.m_height;
+			s_ctx->m_resolution.m_refresh = vm.m_refresh;
+			s_ctx->m_resolution.m_interlace = vm.m_interlace;
+			s_ctx->m_resolution.m_flags = flags;
+		}
+
 		if (s_ctx->init(_type) )
 		{
 			BX_TRACE("Init complete.");
@@ -2554,6 +2566,14 @@ error:
 		BGFX_CHECK_MAIN_THREAD();
 		BX_CHECK(0 == (_flags&BGFX_RESET_RESERVED_MASK), "Do not set reset reserved flags!");
 		s_ctx->reset(_width, _height, _flags);
+	}
+
+	void preset(video_mode _video_mode, uint32_t _flags)
+	{
+		BGFX_CHECK_MAIN_THREAD();
+		BX_CHECK(0 == (_flags&BGFX_RESET_RESERVED_MASK), "Do not set reset reserved flags!");
+		vm = _video_mode;
+		flags = _flags;
 	}
 
 	uint32_t frame(bool _capture)

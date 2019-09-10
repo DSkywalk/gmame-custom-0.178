@@ -132,6 +132,7 @@ running_machine::running_machine(const machine_config &_config, machine_manager 
 		m_scheduler(*this)
 {
 	memset(&m_base_time, 0, sizeof(m_base_time));
+	memset(&switchres, 0, sizeof(switchres));
 
 	// set the machine on all devices
 	device_iterator iter(root_device());

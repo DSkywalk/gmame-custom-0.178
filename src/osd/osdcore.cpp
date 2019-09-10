@@ -167,6 +167,7 @@ void CLIB_DECL osd_printf_log(const char *format, ...)
 }
 #endif
 
+#ifndef OSD_WINDOWS
 //============================================================
 //  osd_ticks
 //============================================================
@@ -194,3 +195,4 @@ void osd_sleep(osd_ticks_t duration)
 {
 	std::this_thread::sleep_for(std::chrono::high_resolution_clock::duration(duration));
 }
+#endif

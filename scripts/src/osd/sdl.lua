@@ -47,6 +47,12 @@ function maintargetosdoptions(_target,_subtarget)
 		addoptionsfromstring(str)
 	end
 
+	if BASE_TARGETOS=="unix" and _OPTIONS["targetos"]=="linux" then
+		local str = backtick("pkg-config --libs libdrm")
+		addlibfromstring(str)
+		addoptionsfromstring(str)		
+	end
+
 	if _OPTIONS["targetos"]=="windows" then
 		if _OPTIONS["with-bundled-sdl2"]~=nil then
 			configuration { "mingw*"}
@@ -424,6 +430,7 @@ project ("osd_" .. _OPTIONS["osd"])
 		MAME_DIR .. "src/osd/sdl/video.cpp",
 		MAME_DIR .. "src/osd/sdl/window.cpp",
 		MAME_DIR .. "src/osd/sdl/window.h",
+		MAME_DIR .. "src/osd/sdl/switchres_sdl.cpp",
 		MAME_DIR .. "src/osd/modules/osdwindow.cpp",
 		MAME_DIR .. "src/osd/modules/osdwindow.h",
 		MAME_DIR .. "src/osd/modules/render/drawsdl.cpp",

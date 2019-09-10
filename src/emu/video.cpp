@@ -86,6 +86,8 @@ video_manager::video_manager(running_machine &machine)
 		m_overall_valid_counter(0),
 		m_throttled(machine.options().throttle()),
 		m_throttle_rate(1.0f),
+ 		m_syncrefresh(machine.options().sync_refresh()),
+ 		m_framedelay(machine.options().frame_delay()),
 		m_fastforward(false),
 		m_seconds_to_run(machine.options().seconds_to_run()),
 		m_auto_frameskip(machine.options().auto_frameskip()),
@@ -224,17 +226,32 @@ void video_manager::frame_update(bool from_debugger)
 	// draw the user interface
 	emulator_info::draw_user_interface(machine());
 
-	// if we're throttling, synchronize before rendering
-	attotime current_time = machine().time();
-	if (!from_debugger && !skipped_it && effective_throttle())
-		update_throttle(current_time);
-
 	// ask the OSD to update
 	g_profiler.start(PROFILER_BLIT);
 	machine().osd().update(!from_debugger && skipped_it);
 	g_profiler.stop();
 
+	// manage black frame insertion
+	if (machine().options().black_frame_insertion() && machine().options().sync_refresh())
+	{
+		render_container *container = &machine().render().ui_container();
+		container->add_rect(0, 0, 1, 1, 0xff000000, PRIMFLAG_BLENDMODE(BLENDMODE_ALPHA));
+		machine().osd().update(!from_debugger && skipped_it);
+	}
+
+	// update speed computations
+	attotime current_time = machine().time();
+	if (!from_debugger && !skipped_it)
+		recompute_speed(current_time);
+
+	// if we're throttling, delay after rendering
+	if (!from_debugger && !skipped_it && effective_throttle())
+		update_throttle(current_time);
+
 	emulator_info::periodic_check();
+
+	// get most recent input now
+	machine().osd().poll_input();
 
 	// perform tasks for this frame
 	if (!from_debugger)
@@ -243,10 +260,6 @@ void video_manager::frame_update(bool from_debugger)
 	// update frameskipping
 	if (!from_debugger)
 		update_frameskip();
-
-	// update speed computations
-	if (!from_debugger && !skipped_it)
-		recompute_speed(current_time);
 
 	// call the end-of-frame callback
 	if (phase == MACHINE_PHASE_RUNNING)
@@ -782,6 +795,20 @@ void video_manager::update_throttle(attotime emutime)
 		3,4,4,5,4,5,5,6, 4,5,5,6,5,6,6,7, 4,5,5,6,5,6,6,7, 5,6,6,7,6,7,7,8
 	};
 
+	// if we're only syncing to the refresh, bail now
+	if (m_syncrefresh)
+	{
+		modeline *mode = &machine().switchres.best_mode;
+		if (m_framedelay == 0 || m_framedelay > 9 || mode->hactive == 0)
+			return;
+
+		osd_ticks_t now = osd_ticks();
+		osd_ticks_t ticks_per_second = osd_ticks_per_second();
+		attoseconds_t attoseconds_per_tick = ATTOSECONDS_PER_SECOND / ticks_per_second * m_throttle_rate;
+		throttle_until_ticks(now + HZ_TO_ATTOSECONDS(mode->vfreq / mode->result.v_scale) / attoseconds_per_tick * m_framedelay / 10);
+		return;
+	}
+
 	// outer scope so we can break out in case of a resync
 	while (1)
 	{
@@ -1056,6 +1083,9 @@ void video_manager::recompute_speed(const attotime &emutime)
 		osd_ticks_t delta_realtime = realtime - m_speed_last_realtime;
 		osd_ticks_t tps = osd_ticks_per_second();
 		m_speed_percent = delta_emutime.as_double() * (double)tps / (double)delta_realtime;
+
+		if (m_syncrefresh && m_throttled)
+			m_speed = m_speed_percent * 1000;
 
 		// remember the last times
 		m_speed_last_realtime = realtime;

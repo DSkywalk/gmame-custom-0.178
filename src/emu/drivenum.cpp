@@ -327,7 +327,7 @@ void driver_enumerator::find_approximate_matches(const char *string, int count, 
 			if (m_included[index])
 				templist[arrayindex++] = index;
 		assert(arrayindex == m_filtered_count);
-
+/*
 		// shuffle
 		for (int shufnum = 0; shufnum < 4 * s_driver_count; shufnum++)
 		{
@@ -337,7 +337,7 @@ void driver_enumerator::find_approximate_matches(const char *string, int count, 
 			templist[item1] = templist[item2];
 			templist[item2] = temp;
 		}
-
+*/
 		// copy out the first few entries
 		for (int matchnum = 0; matchnum < count; matchnum++)
 			results[matchnum] = templist[matchnum % m_filtered_count];

@@ -156,6 +156,15 @@ private:
 	static const uint32_t PACKABLE_SIZE;
 	static const uint32_t WHITE_HASH;
 
+	int   m_adapter;                  // ordinal adapter number
+	int   m_vendor_id;                // adapter vendor id
+	int   m_refresh;                  // current refresh rate
+	bool  m_interlace;                // current interlace
+	int   m_first_scanline;           // first scanline number (visible)
+	int   m_last_scanline;            // last scanline number (visible)
+	int   m_delay_scanline;           // scanline number supposed to be after frame delay
+	int   m_break_scanline;           // break scanline number, for vsync offset
+
 	static bool s_window_set;
 	static uint32_t s_current_view;
 };

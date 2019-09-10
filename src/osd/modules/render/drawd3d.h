@@ -135,9 +135,15 @@ public:
 
 private:
 	int                     m_adapter;                  // ordinal adapter number
+	int                     m_vendor_id;                // adapter vendor id
 	int                     m_width;                    // current width
 	int                     m_height;                   // current height
 	int                     m_refresh;                  // current refresh rate
+	bool                    m_interlace;                // current interlace
+	int                     m_first_scanline;           // first scanline number (visible)
+	int                     m_last_scanline;            // last scanline number (visible)
+	int                     m_delay_scanline;           // scanline number supposed to be after frame delay
+	int                     m_break_scanline;           // break scanline number, for vsync offset
 	int                     m_create_error_count;       // number of consecutive create errors
 
 	IDirect3DDevice9 *      m_device;                   // pointer to the Direct3DDevice object

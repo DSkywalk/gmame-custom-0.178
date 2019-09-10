@@ -93,6 +93,9 @@ typedef device_t * (*machine_config_constructor)(machine_config &config, device_
 // timers, CPU and scheduling
 #include "devcpu.h"
 
+// Switchres
+#include "switchres/switchres.h"
+
 // the running machine
 #include "main.h"
 #include "machine.h"
@@ -118,5 +121,8 @@ typedef device_t * (*machine_config_constructor)(machine_config &config, device_
 
 // member templates that don't like incomplete types
 #include "device.ipp"
+
+// Switchres prototypes
+#include "switchres/switchres_proto.h"
 
 #endif  /* __EMU_H__ */

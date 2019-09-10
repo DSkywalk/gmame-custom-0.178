@@ -340,6 +340,15 @@ namespace bgfx
 		};
 	};
 
+	struct video_mode
+	{
+		uint32_t m_width;
+		uint32_t m_height;
+		uint32_t m_refresh;
+		uint32_t m_interlace;
+		uint32_t m_flags;
+	};
+
 	static const uint16_t invalidHandle = UINT16_MAX;
 
 	BGFX_HANDLE(DynamicIndexBufferHandle);
@@ -1010,6 +1019,8 @@ namespace bgfx
 	///
 	void reset(uint32_t _width, uint32_t _height, uint32_t _flags = BGFX_RESET_NONE);
 
+	void preset(video_mode _video_mode, uint32_t _flags = BGFX_RESET_NONE);
+	
 	/// Advance to next frame. When using multithreaded renderer, this call
 	/// just swaps internal buffers, kicks render thread, and returns. In
 	/// singlethreaded renderer this call does frame rendering.

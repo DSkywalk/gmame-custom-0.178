@@ -81,6 +81,9 @@ public:
 //  PROTOTYPES
 //============================================================
 
+extern bool switchres_resolution_change(sdl_window_info *window);
+// Fixme: need to find a better way to make fd available to window.cpp
+extern int fd;
 
 //============================================================
 //  window_init
@@ -350,6 +353,23 @@ void sdl_window_info::modify_prescale(int dir)
 	}
 }
 
+void sdl_window_info::reset_fullscreen_renderer()
+{
+#if (SDLMAME_SDL2)
+	if (this->fullscreen() && video_config.switchres)
+	{
+		complete_destroy();
+		SDL_QuitSubSystem(SDL_INIT_VIDEO);
+		SDL_InitSubSystem(SDL_INIT_VIDEO);
+		complete_create();
+	}
+#else
+	if (this->fullscreen() && video_config.switchres)
+		this->window_resize(window->minwidth, window->minheight);
+#endif
+}
+
+
 //============================================================
 //  sdlwindow_update_cursor_state
 //  (main or window thread)
@@ -473,7 +493,6 @@ void sdl_window_info::destroy()
 
 	// free the render target, after the textures!
 	machine().render().target_free(m_target);
-
 }
 
 
@@ -488,6 +507,14 @@ osd_dim sdl_window_info::pick_best_mode()
 	int num;
 	float size_score, best_score = 0.0f;
 	osd_dim ret(0,0);
+
+	// check if we already have a best mode
+	modeline *mode = &this->machine().switchres.best_mode;
+	if (mode->hactive)
+	{
+		ret = osd_dim(mode->type & MODE_ROTATED? mode->vactive : mode->hactive, mode->type & MODE_ROTATED? mode->hactive : mode->vactive);
+		return ret;
+	}
 
 	// determine the minimum width/height for the selected target
 	m_target->compute_minimum_size(minimum_width, minimum_height);
@@ -582,8 +609,15 @@ void sdl_window_info::update()
 			}
 			else if (video_config.switchres)
 			{
-				osd_dim tmp = this->pick_best_mode();
-				resize(tmp.width(), tmp.height());
+				// check resolution change
+				if (renderer().m_switchres_mode != nullptr && video_config.switchres && machine().options().changeres())
+				{
+					if (switchres_resolution_change(this))
+					{
+						reset_fullscreen_renderer();
+						return;
+					}
+				}
 			}
 		}
 

@@ -195,6 +195,22 @@ int renderer_bgfx::create()
 	osd_dim wdim = win->get_size();
 	m_width[win->m_index] = wdim.width();
 	m_height[win->m_index] = wdim.height();
+	bgfx::video_mode vm;
+
+	// only link window #0 to SwitchRes
+	if (win->m_index == 0)
+	{
+		m_switchres_mode = &win->machine().switchres.best_mode;
+		if (m_switchres_mode)
+		{
+			vm.m_width = m_width[win->m_index] = m_switchres_mode->type & MODE_ROTATED? m_switchres_mode->height : m_switchres_mode->width;
+			vm.m_height = m_height[win->m_index] = m_switchres_mode->type & MODE_ROTATED? m_switchres_mode->width : m_switchres_mode->height;
+			vm.m_refresh = m_refresh = (int)m_switchres_mode->refresh;
+			vm.m_interlace = m_interlace = m_switchres_mode->interlace;
+		}
+	}
+	bgfx::preset(vm, (win->fullscreen()? BGFX_RESET_FULLSCREEN : BGFX_RESET_NONE) | (video_config.waitvsync ? BGFX_RESET_VSYNC : BGFX_RESET_NONE));
+
 	if (win->m_index == 0)
 	{
 		if (!s_window_set)
@@ -244,7 +260,7 @@ int renderer_bgfx::create()
 			printf("Unknown backend type '%s', going with auto-detection\n", backend.c_str());
 			bgfx::init();
 		}
-		bgfx::reset(m_width[win->m_index], m_height[win->m_index], video_config.waitvsync ? BGFX_RESET_VSYNC : BGFX_RESET_NONE);
+
 		// Enable debug text.
 		bgfx::setDebug(m_options.bgfx_debug() ? BGFX_DEBUG_STATS : BGFX_DEBUG_TEXT);
 		m_dimensions = osd_dim(m_width[0], m_height[0]);
@@ -748,8 +764,8 @@ int renderer_bgfx::draw(int update)
 	m_ui_view = -1;
 
 	osd_dim wdim = win->get_size();
-	m_width[window_index] = wdim.width();
-	m_height[window_index] = wdim.height();
+	m_width[window_index] = !video_config.windowed && window_index == 0? (m_switchres_mode->type & MODE_ROTATED? m_switchres_mode->height : m_switchres_mode->width) : wdim.width();
+	m_height[window_index] = !video_config.windowed && window_index == 0? (m_switchres_mode->type & MODE_ROTATED? m_switchres_mode->width : m_switchres_mode->height) : wdim.height();
 
 	// Set view 0 default viewport.
 	if (window_index == 0)
@@ -885,15 +901,15 @@ bool renderer_bgfx::update_dimensions()
 	{
 		if ((m_dimensions != osd_dim(width, height)))
 		{
-			bgfx::reset(width, height, video_config.waitvsync ? BGFX_RESET_VSYNC : BGFX_RESET_NONE);
+			bgfx::reset(width, height, (win->fullscreen()? BGFX_RESET_FULLSCREEN : BGFX_RESET_NONE) | (video_config.waitvsync ? BGFX_RESET_VSYNC : BGFX_RESET_NONE));
 			m_dimensions = osd_dim(width, height);
 		}
 	}
 	else
 	{
 		if ((m_dimensions != osd_dim(width, height)))
-		{
-			bgfx::reset(win->main_window()->get_size().width(), win->main_window()->get_size().height(), video_config.waitvsync ? BGFX_RESET_VSYNC : BGFX_RESET_NONE);
+		{			
+			bgfx::reset(win->main_window()->get_size().width(), win->main_window()->get_size().height(), (win->fullscreen()? BGFX_RESET_FULLSCREEN : BGFX_RESET_NONE) | (video_config.waitvsync ? BGFX_RESET_VSYNC : BGFX_RESET_NONE));
 			m_dimensions = osd_dim(width, height);
 
 			delete m_framebuffer;

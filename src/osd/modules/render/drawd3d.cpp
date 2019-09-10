@@ -47,13 +47,19 @@ enum
 //  INLINES
 //============================================================
 
-static inline BOOL GetClientRectExceptMenu(HWND hWnd, PRECT pRect, BOOL fullscreen)
+static inline BOOL GetClientRectExceptMenu(HWND hWnd, PRECT pRect, BOOL fullscreen, modeline *mode)
 {
 	static HMENU last_menu;
 	static RECT last_rect;
 	static RECT cached_rect;
 	HMENU menu = GetMenu(hWnd);
 	BOOL result = GetClientRect(hWnd, pRect);
+
+	if (mode && mode->hactive)
+	{
+		pRect->right = mode->type & MODE_ROTATED? mode->vactive : mode->hactive;
+		pRect->bottom = mode->type & MODE_ROTATED? mode->hactive : mode->vactive;
+	}
 
 	if (!fullscreen || !menu)
 		return result;
@@ -170,10 +176,17 @@ render_primitive_list *renderer_d3d9::get_primitives()
 	if (win == nullptr)
 		return nullptr;
 
-	GetClientRectExceptMenu(win->platform_window<HWND>(), &client, win->fullscreen());
+	GetClientRectExceptMenu(win->platform_window<HWND>(), &client, win->fullscreen(), m_switchres_mode);
 	if (rect_width(&client) > 0 && rect_height(&client) > 0)
 	{
-		win->target()->set_bounds(rect_width(&client), rect_height(&client), win->pixel_aspect());
+		// handle aspect correction for magic resolutions
+		float aspect_corrector = 1.0f;
+		if (m_switchres_mode && m_switchres_mode->hactive)
+		{
+			aspect_corrector = ((float)m_switchres_mode->width / (float)m_switchres_mode->height) / ((float)m_switchres_mode->hactive / (float)m_switchres_mode->vactive);
+			if (m_switchres_mode->type & MODE_ROTATED) aspect_corrector = 1.0 / aspect_corrector;
+		}
+		win->target()->set_bounds(rect_width(&client), rect_height(&client), win->pixel_aspect() * aspect_corrector);
 		win->target()->set_max_update_rate((get_refresh() == 0) ? get_origmode().RefreshRate : get_refresh());
 	}
 	if (m_shaders != nullptr)
@@ -751,10 +764,44 @@ void renderer_d3d9::end_frame()
 	if (FAILED(result))
 		osd_printf_verbose("Direct3D: Error %08lX during device end_scene call\n", result);
 
+	D3DRASTER_STATUS raster_status;
+	memset (&raster_status, 0, sizeof(D3DRASTER_STATUS));
+
+	// sync to VBLANK-BEGIN
+	if (win->machine().options().frame_delay() != 0 && video_config.syncrefresh)
+	{
+		// check if retrace has been missed
+		if (m_device->GetRasterStatus(0, &raster_status) == D3D_OK)
+		{
+			if (raster_status.ScanLine < m_delay_scanline && !raster_status.InVBlank)
+			{
+				static const double tps = (double)osd_ticks_per_second();
+				static const double time_start = (double)osd_ticks() / tps;
+				osd_printf_verbose("renderer::end_frame(), probably missed retrace, entered at scanline %d, should break at %d, realtime is %f.\n", raster_status.ScanLine, m_break_scanline, (double)osd_ticks() / tps - time_start);
+			}
+		}
+
+		do
+		{
+			if (m_device->GetRasterStatus(0, &raster_status) != D3D_OK)
+				break;
+		} while (!raster_status.InVBlank && raster_status.ScanLine < m_break_scanline);
+	}
+
 	// present the current buffers
 	result = m_device->Present(nullptr, nullptr, nullptr, nullptr);
 	if (FAILED(result))
 		osd_printf_verbose("Direct3D: Error %08lX during device present call\n", result);
+
+	// sync to VBLANK-END
+	if (win->machine().options().frame_delay() != 0 && video_config.syncrefresh)
+	{
+		do
+		{
+			if (m_device->GetRasterStatus(0, &raster_status) != D3D_OK)
+				break;
+		} while (raster_status.ScanLine >= m_break_scanline || raster_status.ScanLine <= m_first_scanline);
+	}
 }
 
 void renderer_d3d9::update_presentation_parameters()
@@ -765,7 +812,7 @@ void renderer_d3d9::update_presentation_parameters()
 	m_presentation.BackBufferWidth = m_width;
 	m_presentation.BackBufferHeight = m_height;
 	m_presentation.BackBufferFormat = m_pixformat;
-	m_presentation.BackBufferCount = video_config.triplebuf ? 2 : 1;
+	m_presentation.BackBufferCount = 1;
 	m_presentation.MultiSampleType = D3DMULTISAMPLE_NONE;
 	m_presentation.SwapEffect = D3DSWAPEFFECT_DISCARD;
 	m_presentation.hDeviceWindow = win->platform_window<HWND>();
@@ -774,10 +821,10 @@ void renderer_d3d9::update_presentation_parameters()
 	m_presentation.AutoDepthStencilFormat = D3DFMT_D16;
 	m_presentation.Flags = 0;
 	m_presentation.FullScreen_RefreshRateInHz = m_refresh;
-	m_presentation.PresentationInterval = (
-		(video_config.triplebuf && win->fullscreen())
+	m_presentation.PresentationInterval = (win->machine().options().frame_delay() == 0 &&
+		((video_config.triplebuf && win->fullscreen())
 		|| video_config.waitvsync
-		|| video_config.syncrefresh)
+		|| video_config.syncrefresh))
 			? D3DPRESENT_INTERVAL_ONE
 			: D3DPRESENT_INTERVAL_IMMEDIATE;
 }
@@ -890,6 +937,43 @@ try_again:
 	}
 	m_create_error_count = 0;
 	osd_printf_verbose("Direct3D: Device created at %dx%d\n", m_width, m_height);
+
+	switch (m_vendor_id)
+	{
+		case 0x1002: // ATI
+			m_first_scanline = m_switchres_mode && m_switchres_mode->vtotal ?
+				(m_switchres_mode->vtotal - m_switchres_mode->vbegin) / (m_switchres_mode->interlace ? 2 : 1) :
+				1;
+
+			m_last_scanline = m_switchres_mode && m_switchres_mode->vtotal ?
+				m_switchres_mode->vactive + (m_switchres_mode->vtotal - m_switchres_mode->vbegin) / (m_switchres_mode->interlace ? 2 : 1) :
+				m_height;
+			break;
+
+		case 0x8086: // Intel
+			m_first_scanline = 1;
+
+			m_last_scanline = m_switchres_mode && m_switchres_mode->vtotal ?
+				m_switchres_mode->vactive / (m_switchres_mode->interlace ? 2 : 1) :
+				m_height;
+			break;
+
+		default: // NVIDIA (0x10DE) + others (?)
+			m_first_scanline = 0;
+
+			m_last_scanline = m_switchres_mode && m_switchres_mode->vtotal ?
+				(m_switchres_mode->vactive - 1) / (m_switchres_mode->interlace ? 2 : 1) :
+				m_height - 1;
+			break;
+	}
+
+	auto win = assert_window();
+	m_break_scanline = m_last_scanline - win->machine().options().vsync_offset();
+	m_break_scanline = m_break_scanline > m_first_scanline ? m_break_scanline : m_last_scanline;
+	m_delay_scanline = m_first_scanline + (m_switchres_mode && m_switchres_mode->vtotal ? m_switchres_mode->vtotal : m_height) * (win->machine().options().frame_delay() - 1) / 10;
+
+	osd_printf_verbose("Direct3D: First scanline: %d, Last scanline: %d, Break scanline: %d, Delay scanline: %d\n", m_first_scanline, m_last_scanline, m_break_scanline, m_delay_scanline);
+
 
 	update_gamma_ramp();
 
@@ -1200,6 +1284,9 @@ int renderer_d3d9::config_adapter_mode()
 	}
 
 	osd_printf_verbose("Direct3D: Configuring adapter #%d = %s\n", m_adapter, id.Description);
+	osd_printf_verbose("Direct3D: Adapter has Vendor ID: %lX and Device ID: %lX\n", id.VendorId, id.DeviceId);
+
+	m_vendor_id = id.VendorId;
 
 	// get the current display mode
 	result = d3dintf->d3dobj->GetAdapterDisplayMode(m_adapter, &m_origmode);
@@ -1216,8 +1303,11 @@ int renderer_d3d9::config_adapter_mode()
 	{
 		RECT client;
 
+		// Disable SwitchRes
+		m_switchres_mode = 0;
+
 		// bounds are from the window client rect
-		GetClientRectExceptMenu(win->platform_window<HWND>(), &client, win->fullscreen());
+		GetClientRectExceptMenu(win->platform_window<HWND>(), &client, win->fullscreen(), m_switchres_mode);
 		m_width = client.right - client.left;
 		m_height = client.bottom - client.top;
 
@@ -1298,6 +1388,20 @@ void renderer_d3d9::pick_best_mode()
 
 	auto win = assert_window();
 
+	// only link window #0 to SwitchRes
+	if (win->m_index == 0)
+	{
+		m_switchres_mode = &win->machine().switchres.best_mode;
+		if (m_switchres_mode)
+		{
+			m_width = m_switchres_mode->type & MODE_ROTATED? m_switchres_mode->height : m_switchres_mode->width;
+			m_height = m_switchres_mode->type & MODE_ROTATED? m_switchres_mode->width : m_switchres_mode->height;
+			m_refresh = (int)m_switchres_mode->refresh;
+			m_interlace = m_switchres_mode->interlace;
+			return;
+		}
+	}
+
 	// determine the refresh rate of the primary screen
 	const screen_device *primary_screen = win->machine().config().first_screen();
 	if (primary_screen != nullptr)
@@ -1339,20 +1443,12 @@ void renderer_d3d9::pick_best_mode()
 		if (mode.Width < minwidth || mode.Height < minheight)
 			size_score *= 0.01f;
 
-		// if mode is smaller than we'd like, it only scores up to 0.1
-		if (mode.Width < target_width || mode.Height < target_height)
-			size_score *= 0.1f;
-
 		// if we're looking for a particular mode, that's a winner
 		if (mode.Width == win->m_win_config.width && mode.Height == win->m_win_config.height)
 			size_score = 2.0f;
 
 		// compute refresh score
 		float refresh_score = 1.0f / (1.0f + fabs((double)mode.RefreshRate - target_refresh));
-
-		// if refresh is smaller than we'd like, it only scores up to 0.1
-		if ((double)mode.RefreshRate < target_refresh)
-			refresh_score *= 0.1f;
 
 		// if we're looking for a particular refresh, make sure it matches
 		if (mode.RefreshRate == win->m_win_config.refresh)
@@ -1386,7 +1482,7 @@ int renderer_d3d9::update_window_size()
 
 	// get the current window bounds
 	RECT client;
-	GetClientRectExceptMenu(win->platform_window<HWND>(), &client, win->fullscreen());
+	GetClientRectExceptMenu(win->platform_window<HWND>(), &client, win->fullscreen(), m_switchres_mode);
 
 	// if we have a device and matching width/height, nothing to do
 	if (m_device != nullptr && rect_width(&client) == m_width && rect_height(&client) == m_height)

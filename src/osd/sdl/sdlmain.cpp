@@ -62,6 +62,10 @@
 #endif // INI_PATH
 
 
+extern bool switchres_modeline_setup(running_machine &machine);
+extern bool switchres_modeline_reset(running_machine &machine);
+extern bool switchres_modeline_remove(running_machine &machine);
+
 //============================================================
 //  Global variables
 //============================================================
@@ -254,6 +258,10 @@ void sdl_osd_interface::osd_exit()
 	osd_common_t::osd_exit();
 
 	SDL_QuitSubSystem(SDL_INIT_VIDEO);
+
+	// SwitchRes modeline removal
+	switchres_modeline_reset(machine());
+	switchres_modeline_remove(machine());
 }
 
 //============================================================
@@ -400,6 +408,10 @@ void sdl_osd_interface::init(running_machine &machine)
 	osd_common_t::init(machine);
 
 	const char *stemp;
+
+	// Switchres
+	switchres_init_osd(machine);
+	switchres_modeline_setup(machine);
 
 	// determine if we are benchmarking, and adjust options appropriately
 	int bench = options().bench();

@@ -202,6 +202,7 @@ namespace stl
 
 #define BGFX_DEFAULT_WIDTH  1280
 #define BGFX_DEFAULT_HEIGHT 720
+#define BGFX_DEFAULT_REFRESH 60
 
 #define BGFX_MAX_COMPUTE_BINDINGS 8
 
@@ -1346,12 +1347,16 @@ namespace bgfx
 		Resolution()
 			: m_width(BGFX_DEFAULT_WIDTH)
 			, m_height(BGFX_DEFAULT_HEIGHT)
+			, m_refresh(BGFX_DEFAULT_REFRESH)
+			, m_interlace(0)
 			, m_flags(BGFX_RESET_NONE)
 		{
 		}
 
 		uint32_t m_width;
 		uint32_t m_height;
+		uint32_t m_refresh;
+		uint32_t m_interlace;
 		uint32_t m_flags;
 	};
 

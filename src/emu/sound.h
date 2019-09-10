@@ -226,7 +226,7 @@ private:
 	void config_load(config_type cfg_type, xml_data_node *parentnode);
 	void config_save(config_type cfg_type, xml_data_node *parentnode);
 
-	void update(void *ptr = nullptr, INT32 param = 0);
+	void update();
 
 	// internal state
 	running_machine &   m_machine;              // reference to our machine
